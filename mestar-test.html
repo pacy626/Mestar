@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mestar — Bot Testare</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d14;font-family:'Segoe UI',sans-serif;color:#fff;padding:16px;min-height:100vh}
+.header{text-align:center;padding:20px 0 16px}
+.logo{font-size:26px;font-weight:800}.logo span{color:#f97316}
+.subtitle{font-size:12px;color:#666;margin-top:4px}
+.card{background:#1a1a28;border-radius:13px;border:1px solid #2a2a3e;padding:16px;margin-bottom:12px}
+.btn{border:none;border-radius:9px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;display:block;margin-bottom:8px}
+.btn-o{background:#f97316;color:#fff}.btn-o:hover{opacity:.9}
+.btn-out{background:transparent;border:1px solid #3a3a4e;color:#aaa}.btn-out:hover{border-color:#f97316;color:#f97316}
+.test-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #1e1e2e}
+.test-row:last-child{border-bottom:none}
+.ic{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.ic-w{background:#2a2a3e;color:#666}
+.ic-r{background:#fbbf2420;color:#fbbf24;animation:p 1s infinite}
+.ic-ok{background:#4ade8020;color:#4ade80}
+.ic-f{background:#f8717120;color:#f87171}
+.ic-s{background:#60a5fa20;color:#60a5fa}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.4}}
+.nm{flex:1;font-size:13px;color:#ccc}
+.ms{font-size:11px;color:#666;margin-top:2px}
+.tm{font-size:11px;color:#444;flex-shrink:0}
+.pg{height:5px;background:#1e1e2e;border-radius:3px;margin:10px 0;overflow:hidden}
+.pf{height:100%;background:linear-gradient(90deg,#f97316,#fbbf24);border-radius:3px;transition:width .3s;width:0%}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.sc{background:#0d0d14;border-radius:9px;padding:12px;text-align:center}
+.sv{font-size:22px;font-weight:700}.sl{font-size:10px;color:#666;margin-top:2px;text-transform:uppercase;letter-spacing:1px}
+.log{background:#0d0d14;border-radius:8px;padding:10px;font-family:'Courier New',monospace;font-size:11px;max-height:180px;overflow-y:auto;margin-top:8px;border:1px solid #1e1e2e}
+.lo{color:#4ade80}.le{color:#f87171}.li{color:#60a5fa}.lw{color:#fbbf24}
+.lbl{font-size:11px;color:#666;margin-bottom:4px;display:block}
+input{background:#0d0d14;border:1px solid #2a2a3e;border-radius:8px;padding:8px 12px;font-size:13px;color:#fff;width:100%;outline:none;margin-bottom:10px}
+.grp{font-size:11px;color:#444;padding:8px 0 3px;font-weight:600}
+.pill{display:inline-flex;border-radius:20px;padding:2px 7px;font-size:10px;font-weight:600;flex-shrink:0}
+.pk{background:#4ade8020;color:#4ade80}.pf2{background:#f8717120;color:#f87171}.ps{background:#60a5fa20;color:#60a5fa}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">Mes<span>tar</span> <span style="font-size:16px">🤖</span></div>
+  <div class="subtitle">Bot testare automată</div>
+</div>
+
+<div class="card" id="cfg">
+  <div style="font-size:12px;color:#666;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">Configurare</div>
+  <label class="lbl">Email test client</label>
+  <input id="ec" value="testbot.client.mestar@mailinator.com">
+  <label class="lbl">Email test meșter</label>
+  <input id="em" value="testbot.mester.mestar@mailinator.com">
+  <div style="font-size:12px;color:#fbbf24;background:#fbbf2410;border-radius:8px;padding:9px;margin-bottom:12px">⚠️ Botul creează conturi temporare și le șterge automat la final. Parolă test: <strong>Mestar2025!</strong></div>
+  <button class="btn btn-o" onclick="start()">🤖 Pornește testarea automată</button>
+  <button class="btn btn-out" onclick="cleanOnly()">🗑️ Curăță conturile de test</button>
+</div>
+
+<div class="card" id="prog" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <div style="font-weight:700;font-size:14px" id="pt">Se rulează...</div>
+    <div style="font-size:12px;color:#f97316" id="pp">0%</div>
+  </div>
+  <div class="pg"><div class="pf" id="pf"></div></div>
+  <div style="font-size:12px;color:#666" id="pc">Inițializare...</div>
+</div>
+
+<div class="card" id="res" style="display:none">
+  <div style="font-size:11px;color:#666;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Rezultate</div>
+  <div class="grid3">
+    <div class="sc"><div class="sv" style="color:#4ade80" id="sok">0</div><div class="sl">Trecute</div></div>
+    <div class="sc"><div class="sv" style="color:#f87171" id="sfail">0</div><div class="sl">Eșuate</div></div>
+    <div class="sc"><div class="sv" style="color:#60a5fa" id="sskip">0</div><div class="sl">Sărite</div></div>
+  </div>
+  <div id="tlist"></div>
+</div>
+
+<div class="card" id="logc" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px">Log</div>
+    <span onclick="document.getElementById('la').innerHTML=''" style="font-size:11px;color:#444;cursor:pointer">Șterge</span>
+  </div>
+  <div class="log" id="la"></div>
+</div>
+
+<div class="card" id="fin" style="display:none">
+  <div style="font-size:13px;color:#aaa;margin-bottom:10px">Testare finalizată! Deschide aplicația pentru verificare manuală:</div>
+  <button class="btn btn-o" onclick="window.open('https://chimerical-elf-19e79c.netlify.app','_blank')">🌐 Deschide Mestar</button>
+  <button class="btn btn-out" onclick="reset()">🔄 Rulează din nou</button>
+</div>
+
+<script>
+const{createClient}=supabase;
+const sb=createClient('https://fwtryskowjcxdgrewgrx.supabase.co','sb_publishable_F8NvWOF7fXb_kia2ghT1lw_Q539vACz');
+const PASS='Mestar2025!';
+let rs=[],done=0,total=0;
+let cId=null,mId=null,mProfId=null,cerereId=null;
+
+const TESTS=[
+  {id:'rc',name:'Înregistrare client',g:'👤 Conturi'},
+  {id:'rm',name:'Înregistrare meșter',g:'👤 Conturi'},
+  {id:'lc',name:'Login client',g:'👤 Conturi'},
+  {id:'lm',name:'Login meșter',g:'👤 Conturi'},
+  {id:'gl',name:'Login Google (manual — OAuth)',g:'👤 Conturi',skip:true},
+  {id:'ls',name:'Listare meșteri',g:'🔍 Căutare'},
+  {id:'fc',name:'Filtrare categorie',g:'🔍 Căutare'},
+  {id:'pm',name:'Vizualizare profil meșter',g:'🔍 Căutare'},
+  {id:'cc',name:'Creare cerere',g:'📋 Cereri'},
+  {id:'lcl',name:'Listare cereri client',g:'📋 Cereri'},
+  {id:'ac',name:'Acceptare cerere (meșter)',g:'📋 Cereri'},
+  {id:'sm',name:'Trimitere mesaj chat',g:'💬 Chat'},
+  {id:'rm2',name:'Primire mesaj chat',g:'💬 Chat'},
+  {id:'epc',name:'Editare profil client',g:'✏️ Editare'},
+  {id:'epm',name:'Editare profil meșter',g:'✏️ Editare'},
+  {id:'rev',name:'Creare recenzie',g:'⭐ Recenzii'},
+  {id:'cl',name:'Curățare conturi test',g:'🗑️ Cleanup'},
+];
+
+function log(m,t='i'){const el=document.getElementById('la');const tm=new Date().toLocaleTimeString('ro-RO');const c=t==='ok'?'lo':t==='err'?'le':t==='w'?'lw':'li';el.innerHTML+=`<div class="${c}">[${tm}] ${m}</div>`;el.scrollTop=el.scrollHeight;}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function upProg(cur,pct){document.getElementById('pf').style.width=pct+'%';document.getElementById('pp').textContent=Math.round(pct)+'%';document.getElementById('pc').textContent=cur;}
+
+function renderRes(){
+  const ok=rs.filter(r=>r.s==='ok').length,fail=rs.filter(r=>r.s==='f').length,skip=rs.filter(r=>r.s==='s').length;
+  document.getElementById('sok').textContent=ok;document.getElementById('sfail').textContent=fail;document.getElementById('sskip').textContent=skip;
+  let html='',lg='';
+  for(const t of TESTS){
+    const r=rs.find(x=>x.id===t.id)||{s:'w'};
+    if(t.g!==lg){lg=t.g;html+=`<div class="grp">${t.g}</div>`;}
+    const ic={w:'⏳',r:'⚡',ok:'✅',f:'❌',s:'⏭️'};const icC={w:'ic-w',r:'ic-r',ok:'ic-ok',f:'ic-f',s:'ic-s'};
+    const pc=r.s==='ok'?'pk':r.s==='f'?'pf2':r.s==='s'?'ps':'';
+    const pt=r.s==='ok'?'OK':r.s==='f'?'EȘUAT':r.s==='s'?'SĂRIT':'';
+    html+=`<div class="test-row"><div class="ic ${icC[r.s]||'ic-w'}">${ic[r.s]||'⏳'}</div><div style="flex:1"><div class="nm">${t.name}</div>${r.m?`<div class="ms">${r.m}</div>`:''}</div>${pt?`<span class="pill ${pc}">${pt}</span>`:''}${r.t?`<div class="tm">${r.t}ms</div>`:''}</div>`;
+  }
+  document.getElementById('tlist').innerHTML=html;
+}
+
+function setR(id,s,m='',t=0){const i=rs.findIndex(r=>r.id===id);if(i>=0)rs[i]={id,s,m,t};else rs.push({id,s,m,t});renderRes();}
+function setRun(id){setR(id,'r');}
+
+async function run(id,fn){
+  if(TESTS.find(t=>t.id===id)?.skip){setR(id,'s','Necesită browser real (OAuth)');log(`⏭️ ${id} — sărit`,'w');done++;upProg(`Sărit: ${id}`,(done/total)*100);return null;}
+  setRun(id);const st=Date.now();
+  try{const res=await fn();const t=Date.now()-st;setR(id,'ok',res?.m||'',t);log(`✅ ${id} (${t}ms)`,'ok');done++;upProg(`OK: ${id}`,(done/total)*100);return res;}
+  catch(e){const t=Date.now()-st;setR(id,'f',e.message||String(e),t);log(`❌ ${id}: ${e.message}`,'err');done++;upProg(`Eșuat: ${id}`,(done/total)*100);return null;}
+}
+
+// TESTE
+async function t_rc(){
+  const email=document.getElementById('ec').value;
+  const{error}=await sb.auth.signUp({email,password:PASS});
+  if(error&&!error.message.includes('already'))throw new Error(error.message);
+  const{data:ld,error:le}=await sb.auth.signInWithPassword({email,password:PASS});
+  if(le)throw new Error('Login după reg eșuat: '+le.message);
+  cId=ld.user.id;
+  await sb.from('profiles').upsert({id:cId,name:'Client Test Bot',email,role:'client',phone:'0700000001'});
+  await sb.auth.signOut();
+  return{m:'client creat: '+email};
+}
+
+async function t_rm(){
+  const email=document.getElementById('em').value;
+  const{error}=await sb.auth.signUp({email,password:PASS});
+  if(error&&!error.message.includes('already'))throw new Error(error.message);
+  const{data:ld,error:le}=await sb.auth.signInWithPassword({email,password:PASS});
+  if(le)throw new Error('Login meșter eșuat: '+le.message);
+  mId=ld.user.id;
+  await sb.from('profiles').upsert({id:mId,name:'Meșter Test Bot',email,role:'mester',phone:'0700000002'});
+  const{error:me}=await sb.from('mesteri').upsert({user_id:mId,name:'Meșter Test Bot',spec:'Instalator sanitar',city:'București',years_exp:5,bio:'Meșter test bot',plan:'free',rating:5.0,jobs_count:0,emoji:'💧',bg_color:'#1a2a3d',tags:'Țevi,Test',phone:'0700000002'},{onConflict:'user_id'});
+  if(me)throw new Error('Creare profil meșter: '+me.message);
+  const{data:mp}=await sb.from('mesteri').select('id').eq('user_id',mId).single();
+  mProfId=mp?.id;
+  await sb.auth.signOut();
+  return{m:'meșter creat'};
+}
+
+async function t_lc(){
+  const email=document.getElementById('ec').value;
+  const{data,error}=await sb.auth.signInWithPassword({email,password:PASS});
+  if(error)throw new Error(error.message);
+  const{data:p}=await sb.from('profiles').select('role').eq('id',data.user.id).single();
+  if(p?.role!=='client')throw new Error('Rol incorect: '+p?.role);
+  await sb.auth.signOut();
+  return{m:'login OK, rol: client'};
+}
+
+async function t_lm(){
+  const email=document.getElementById('em').value;
+  const{data,error}=await sb.auth.signInWithPassword({email,password:PASS});
+  if(error)throw new Error(error.message);
+  const{data:mp}=await sb.from('mesteri').select('spec').eq('user_id',data.user.id).single();
+  if(!mp)throw new Error('Profilul meșterului nu există');
+  await sb.auth.signOut();
+  return{m:'login OK, spec: '+mp.spec};
+}
+
+async function t_ls(){
+  const{data,error}=await sb.from('mesteri').select('*');
+  if(error)throw new Error(error.message);
+  if(!data?.length)throw new Error('Niciun meșter în DB');
+  return{m:data.length+' meșteri găsiți'};
+}
+
+async function t_fc(){
+  const{data,error}=await sb.from('mesteri').select('*').ilike('spec','%instalator%');
+  if(error)throw new Error(error.message);
+  return{m:data.length+' instalatori găsiți'};
+}
+
+async function t_pm(){
+  if(!mProfId)throw new Error('ID meșter lipsă');
+  const{data,error}=await sb.from('mesteri').select('*').eq('id',mProfId).single();
+  if(error)throw new Error(error.message);
+  if(!data.name)throw new Error('Profil incomplet');
+  return{m:'profil OK: '+data.name};
+}
+
+async function t_cc(){
+  if(!cId||!mProfId)throw new Error('Lipsesc ID-urile');
+  const email=document.getElementById('ec').value;
+  await sb.auth.signInWithPassword({email,password:PASS});
+  const{data,error}=await sb.from('cereri').insert({
+    client_id:cId,mester_id:mProfId,client_name:'Client Test Bot',mester_name:'Meșter Test Bot',
+    tip:'Reparație urgentă',descriere:'Test automat — cerere simulată 🤖',
+    adresa:'Str. Test nr.1, București',disponibilitate:'Cât mai curând',status:'pending'
+  }).select().single();
+  if(error)throw new Error('Insert cerere: '+error.message);
+  cerereId=data.id;
+  await sb.auth.signOut();
+  return{m:'cerere creată: '+cerereId?.substring(0,8)+'...'};
+}
+
+async function t_lcl(){
+  if(!cId)throw new Error('ID client lipsă');
+  const email=document.getElementById('ec').value;
+  await sb.auth.signInWithPassword({email,password:PASS});
+  const{data,error}=await sb.from('cereri').select('*').eq('client_id',cId);
+  if(error)throw new Error(error.message);
+  if(!data?.length)throw new Error('Nicio cerere găsită');
+  await sb.auth.signOut();
+  return{m:data.length+' cereri găsite'};
+}
+
+async function t_ac(){
+  if(!cerereId)throw new Error('ID cerere lipsă');
+  const email=document.getElementById('em').value;
+  await sb.auth.signInWithPassword({email,password:PASS});
+  const{error}=await sb.from('cereri').update({status:'accepted'}).eq('id',cerereId);
+  if(error)throw new Error('Update cerere: '+error.message);
+  const{data:ch}=await sb.from('cereri').select('status').eq('id',cerereId).single();
+  if(ch?.status!=='accepted')throw new Error('Status nu s-a schimbat');
+  await sb.auth.signOut();
+  return{m:'cerere acceptată'};
+}
+
+async function t_sm(){
+  if(!cerereId||!cId)throw new Error('Lipsesc ID-uri');
+  const email=document.getElementById('ec').value;
+  await sb.auth.signInWithPassword({email,password:PASS});
+  const{error}=await sb.from('mesaje').insert({
+    cerere_id:cerereId,sender_id:cId,sender_name:'Client Test Bot',
+    receiver_id:mId,text:'Mesaj test automat 🤖',citit:false
+  });
+  if(error)throw new Error('Insert mesaj: '+error.message);
+  await sb.auth.signOut();
+  return{m:'mesaj trimis'};
+}
+
+async function t_rm2(){
+  if(!cerereId||!mId)throw new Error('Lipsesc ID-uri');
+  const email=document.getElementById('em').value;
+  await sb.auth.signInWithPassword({email,password:PASS});
+  const{data,error}=await sb.from('mesaje').select('*').eq('cerere_id',cerereId);
+  if(error)throw new Error(error.message);
+  if(!data?.length)throw new Error('Niciun mesaj găsit');
+  await sb.from('mesaje').update({citit:true}).eq('cerere_id',cerereId).neq('sender_id',mId);
+  await sb.auth.signOut();
+  return{m:data.length+' mesaje, marcate citite'};
+}
+
+async function t_epc(){
+  if(!cId)throw new Error('ID client lipsă');
+  const email=document.getElementById('ec').value;
+  await sb.auth.signInWithPassword({email,password:PASS});
+  const{error}=await sb.from('profiles').update({name:'Client Bot Editat',city:'Cluj-Napoca'}).eq('id',cId);
+  if(error)throw new Error('Update profil: '+error.message);
+  const{data:ch}=await sb.from('profiles').select('name').eq('id',cId).single();
+  if(ch?.name!=='Client Bot Editat')throw new Error('Numele nu s-a schimbat — verifică RLS policies');
+  await sb.auth.signOut();
+  return{m:'profil client actualizat'};
+}
+
+async function t_epm(){
+  if(!mId||!mProfId)throw new Error('ID meșter lipsă');
+  const email=document.getElementById('em').value;
+  await sb.auth.signInWithPassword({email,password:PASS});
+  const{error}=await sb.from('mesteri').update({bio:'Bio editat de bot',years_exp:8}).eq('id',mProfId);
+  if(error)throw new Error('Update meșter: '+error.message);
+  const{data:ch}=await sb.from('mesteri').select('years_exp').eq('id',mProfId).single();
+  if(ch?.years_exp!==8)throw new Error('Ani exp nu s-a schimbat — verifică RLS policies');
+  await sb.auth.signOut();
+  return{m:'profil meșter actualizat'};
+}
+
+async function t_rev(){
+  if(!cId||!mProfId||!cerereId)throw new Error('Lipsesc ID-uri');
+  const email=document.getElementById('ec').value;
+  await sb.auth.signInWithPassword({email,password:PASS});
+  const{error}=await sb.from('recenzii').insert({
+    cerere_id:cerereId,mester_id:mProfId,client_id:cId,
+    client_name:'Client Test Bot',stars:5,comentariu:'Test bot ⭐⭐⭐⭐⭐'
+  });
+  if(error)throw new Error('Insert recenzie: '+error.message);
+  await sb.auth.signOut();
+  return{m:'recenzie 5 stele adăugată'};
+}
+
+async function t_cl(){
+  let cleaned=0;
+  for(const email of[document.getElementById('ec').value,document.getElementById('em').value]){
+    const{data:ld}=await sb.auth.signInWithPassword({email,password:PASS});
+    if(ld?.user){
+      const uid=ld.user.id;
+      await sb.from('mesaje').delete().eq('sender_id',uid);
+      await sb.from('recenzii').delete().eq('client_id',uid);
+      await sb.from('cereri').delete().eq('client_id',uid);
+      await sb.from('mesteri').delete().eq('user_id',uid);
+      await sb.from('profiles').delete().eq('id',uid);
+      await sb.auth.signOut();
+      cleaned++;
+      log('✅ Șters: '+email,'ok');
+    }
+  }
+  cId=null;mId=null;mProfId=null;cerereId=null;
+  return{m:cleaned+' conturi curățate'};
+}
+
+const TFN={rc:t_rc,rm:t_rm,lc:t_lc,lm:t_lm,ls:t_ls,fc:t_fc,pm:t_pm,cc:t_cc,lcl:t_lcl,ac:t_ac,sm:t_sm,rm2:t_rm2,epc:t_epc,epm:t_epm,rev:t_rev,cl:t_cl};
+
+async function start(){
+  rs=[];done=0;total=TESTS.length;
+  ['cfg'].forEach(id=>document.getElementById(id).style.display='none');
+  ['prog','res','logc'].forEach(id=>document.getElementById(id).style.display='block');
+  document.getElementById('fin').style.display='none';
+  document.getElementById('la').innerHTML='';
+  TESTS.forEach(t=>rs.push({id:t.id,s:'w'}));renderRes();
+  log('🤖 Bot pornit','i');
+  for(const t of TESTS){
+    upProg('Se testează: '+t.name,(done/total)*100);
+    await run(t.id,TFN[t.id]||(async()=>({m:'N/A'})));
+    await sleep(250);
+  }
+  const ok=rs.filter(r=>r.s==='ok').length,fail=rs.filter(r=>r.s==='f').length;
+  document.getElementById('pt').textContent=fail===0?'✅ Toate testele au trecut!':'⚠️ '+fail+' teste au eșuat';
+  upProg('Finalizat!',100);
+  log(`📊 ${ok} OK · ${fail} EȘUATE`+( fail>0?' — verifică RLS policies în Supabase':''),fail>0?'w':'ok');
+  document.getElementById('fin').style.display='block';
+}
+
+async function cleanOnly(){
+  document.getElementById('logc').style.display='block';
+  document.getElementById('la').innerHTML='';
+  log('🗑️ Curățare...','i');
+  await t_cl();
+  log('✅ Gata','ok');
+}
+
+function reset(){
+  rs=[];
+  document.getElementById('cfg').style.display='block';
+  ['prog','res','logc','fin'].forEach(id=>document.getElementById(id).style.display='none');
+}
+</script>
+</body>
+</html>
